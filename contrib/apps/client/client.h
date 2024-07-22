@@ -11,6 +11,8 @@
 #endif
 
 void client_init(void);
+void tcp_client_send(void);
+
 
 #if !PING_USE_SOCKETS
 #endif /* !PING_USE_SOCKETS */

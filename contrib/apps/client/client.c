@@ -8,7 +8,9 @@
 #include "lwip/tcp.h"
 #include "lwip/err.h"
 #include "lwip/icmp.h"
+#include "lwip/init.h"
 #include "lwip/netif.h"
+#include "lwip/ip_addr.h"
 #include "lwip/sys.h"
 #include "lwip/timeouts.h"
 #include "lwip/inet_chksum.h"
@@ -93,6 +95,7 @@ struct client_state
 };
 
 
+struct tcp_pcb *client;
 int counter = 0;
 
 uint8_t data[100];
@@ -107,28 +110,26 @@ static err_t tcp_client_raw_poll(void *arg, struct tcp_pcb *tpcb);
 static err_t tcp_client_raw_sent(void *arg, struct tcp_pcb *tpcb, u16_t len);
 
 
-
 static void tcp_client_raw_send(struct tcp_pcb *tpcb, struct client_state *es);
 
 static void tcp_client_connection_close(struct tcp_pcb *tpcb, struct client_state *es);
 
 static void tcp_client_handle(struct tcp_pcb *tpcb, struct client_state *es);
 
-
+struct netif loop_netif;
 
 void client_init(void)
 {
-  struct tcp_pcb *client = tcp_new();
   ip_addr_t destIPADDR;
   err_t err;
+  client = tcp_new();
+
   IP_ADDR4(&destIPADDR, 192, 168, 1, 100);
-  printf("test1\n");
 
   err = tcp_connect(client, &destIPADDR, 7, tcp_client_raw_connected);
   if (err == ERR_ISCONN) {
 
   }
-  printf("test2\n");
 }
 
 
@@ -137,7 +138,7 @@ void client_init(void)
 /* tcp client connect callback function */
 static err_t tcp_client_raw_connected(void *arg, struct tcp_pcb *newpcb, err_t err) {
   err_t ret;
-  struct client_state *es; 
+  struct client_state *es = esTx; 
 
   LWIP_UNUSED_ARG(arg);
   LWIP_UNUSED_ARG(err);
@@ -152,11 +153,17 @@ static err_t tcp_client_raw_connected(void *arg, struct tcp_pcb *newpcb, err_t e
     es->retries = 0;
     es->p = NULL;
 
+	/*
 	printf("Enter message to send : ");
-	if(fgets((char*)data, sizeof(data), stdin) != NULL)
+	if(scanf("%s", data) == 0) {
+		ret = ERR_MEM;
+	}
+	*/
+	
+	/*if(fgets((char*)data, sizeof(data), stdin) != NULL)
 	{
 	es->p = pbuf_alloc(PBUF_TRANSPORT, strlen((char*)data), PBUF_POOL);
-
+*/
 	pbuf_take(es->p, (char*)data, strlen((char*)data));
 
 
@@ -170,8 +177,6 @@ static err_t tcp_client_raw_connected(void *arg, struct tcp_pcb *newpcb, err_t e
 	printf("open connection success\n");
 
     ret = ERR_OK;
-	}
-	ret = ERR_OK;
   } else {
     tcp_client_connection_close(newpcb, es);
     ret = ERR_MEM;
@@ -269,6 +274,12 @@ static void tcp_client_connection_close(struct tcp_pcb *tpcb, struct client_stat
   tcp_close(tpcb);
 }
 
+void tcp_client_send(void) {
+	if (esTx == NULL) return;
+	if (esTx->state != ES_ACCEPTED) return;
+	tcp_client_raw_send(client, esTx);
+}
+
 
 
 /* 페이로드의 데이터를 전달 */
@@ -277,10 +288,16 @@ static void tcp_client_raw_send(struct tcp_pcb *tpcb, struct client_state *es) {
   err_t ret = ERR_OK;
   char msg[30] = "HELLO WORLD\n";
   
+
+  printf("break point\n");
+
+  if(scanf("%s", msg) != 0) {
+
   while ((ret == ERR_OK) && (es->p != NULL) && (es->p->len <= tcp_sndbuf(tpcb))) {
+	  printf("%s", msg);
     ptr = es->p; /* 전달할 패킷의 패이로드를 포인팅 */
 
-	  strncpy(msg, (char *)ptr->payload, ptr->len);
+	strncpy(msg, (char *)ptr->payload, ptr->len);
 	
     ret = tcp_write(tpcb, ptr->payload, ptr->len, 1); /* 페이로드 부분을 이용하여 tcp_write를 수행 */
     if (ret == ERR_OK) {
@@ -300,6 +317,7 @@ static void tcp_client_raw_send(struct tcp_pcb *tpcb, struct client_state *es) {
     } else {
 
     }
+  }
   }
 }
 
@@ -330,158 +348,6 @@ static err_t tcp_client_raw_poll(void *arg, struct tcp_pcb *tpcb) {
 
 
 
-/*
-
-static err_t tcp_client_raw_accept(void *arg, struct tcp_pcb *newpcb, err_t err) {
-  err_t ret_err;
-  struct client_state *es;
-
-
-
-  LWIP_UNUSED_ARG(arg);
-  if ((err != ERR_OK) || (newpcb == NULL)) {
-    return ERR_VAL;
-  }
-
-
-
-  tcp_setprio(newpcb, TCP_PRIO_MIN);
-
-
-
-  es = (struct client_state *)mem_malloc(sizeof(struct client_state));
-  if (es != NULL) {
-    es->state = ES_ACCEPTED;
-    es->pcb = newpcb;
-    es->retries = 0;
-    es->p = NULL;
-
-    tcp_arg(newpcb, es);
-
-    tcp_recv(newpcb, tcp_client_raw_recv);
-
-    tcp_poll(newpcb, tcp_client_raw_poll, 0);
-
-    tcp_sent(newpcb, tcp_client_raw_sent);
-
-    ret_err = ERR_OK;
-
-  } else {
-
-    ret_err = ERR_MEM;
-
-  }
-
-  return ret_err;
-
-}
-
-*/
-
-
-
-/*
-
-static err_t tcp_client_recv(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t err) {
-
-  struct client_state *es;
-
-  err_t ret;
-
-
-
-  LWIP_ASSERT("arg != NULL", arg != NULL);
-
-
-
-  es = (struct client_state *)arg;
-
-
-
-  if (p == NULL) {
-
-    es->state = ES_CLOSING;
-
-
-
-    if (es->p == NULL) {  전달할 데이터가 없는 경우
-
-      tcp_client_connection_close(tpcb, es);
-
-    } else {
-
-    }
-
-	ret = ERR_OK;
-
-  }
-
-  else if (err != ERR_OK) {
-
-	if (p != NULL) {
-
-		es->p = NULL;
-
-		pbuf_free(p);
-
-	}
-	ret = err;
-  }
-
-  else if (es->state == ES_ACCEPTED) {
-	  es->p = p;
-	  tcp_recved(tpcb, p->tot_len);
-	  tcp_client_handle(tpcb, es);
-	  pbuf_free(p);
-	  ret = ERR_OK;
-  }
-
-  else if (es->state == ES_CLOSING) {
-	  tcp_recved(tpcb, p->tot_len);
-	  es->p = NULL;
-	  pbuf_free(p);
-	  ret = ERR_OK;
-  }
-
-  else {
-
-	  tcp_recved(tpcb, p->tot_len);
-
-	  es->p = NULL;
-
-	  pbuf_free(p);
-
-	  ret = ERR_OK;
-
-  }
-
-  return ret;
-
-}
-
-*/
-
-
-
-/*
-static err_t tcp_client_sent(void *arg, struct tcp_pcb *tpcb, u16_t len) {
-  struct client_state *es;
-  LWIP_UNUSED_ARG(len);
-
-  es = (struct client_state *)arg;
-  es->retries = 0;
-
-  if (es->p != NULL) {  보낼 데이터가 존재하는 경우
-    tcp_sent(tpcb, tcp_client_sent);
-    tcp_client_raw_send(tpcb, es);
-  } else {
-    if (es->state == ES_CLOSING) {
-      tcp_client_connection_close(tpcb, es);
-    }
-  }
-  return ERR_OK;
-}
-*/
 
 
 static void tcp_client_handle (struct tcp_pcb *tpcb, struct client_state *es)

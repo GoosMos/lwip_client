@@ -282,12 +282,13 @@ link_callback(struct netif *state_netif)
 #endif /* LWIP_NETIF_LINK_CALLBACK */
 
 /* This function initializes all network interfaces */
+
 static void
 test_netif_init(void)
 {
 #if LWIP_IPV4 && USE_ETHERNET
   ip4_addr_t ipaddr, netmask, gw;
-#endif /* LWIP_IPV4 && USE_ETHERNET */
+#endif
 #if USE_SLIPIF
   u8_t num_slip1 = 0;
 #if LWIP_IPV4
@@ -298,11 +299,12 @@ test_netif_init(void)
 #if LWIP_IPV4
   ip4_addr_t ipaddr_slip2, netmask_slip2, gw_slip2;
 #endif
-#endif /* USE_SLIPIF > 1 */
-#endif /* USE_SLIPIF */
+#endif
+#endif 
 #if USE_DHCP || USE_AUTOIP
   err_t err;
 #endif
+
 
 #if USE_PPP
   const char *username = NULL, *password = NULL;
@@ -616,7 +618,6 @@ main_loop(void)
 
   /* initialize lwIP stack, network interfaces and applications */
 #if NO_SYS
-  char temp[100];
   lwip_init();
   test_init(NULL);
 #else /* NO_SYS */
@@ -643,10 +644,12 @@ main_loop(void)
 
 #if USE_ETHERNET
 
-	/* tcp_client_raw_send() */
+	tcp_client_send();
+	/*
 	if (fgets(temp, sizeof(temp), stdin) != NULL) {
 		printf("user write : %s", temp);
 	}
+	*/
     default_netif_poll();
 	printf("packet polling\n");
 #else /* USE_ETHERNET */
