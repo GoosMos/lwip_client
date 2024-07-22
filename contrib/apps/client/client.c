@@ -141,14 +141,7 @@ static err_t tcp_client_raw_connected(void *arg, struct tcp_pcb *newpcb, err_t e
 
   LWIP_UNUSED_ARG(arg);
   LWIP_UNUSED_ARG(err);
-/*
-  ip4_addr_t *ipaddr;
-  eth_addr *ethaddr;
 
-  IP_ADDR4(ipaddr, 192, 168, 1, 101);
-
-  ret = etharp_add_static_entry();
-*/
   /* tcp 정보를 유지하기 위해서는 메모리 할당을 통한 유지 필요 */
   es = (struct client_state *)mem_malloc(sizeof(struct client_state));
 
