@@ -160,12 +160,12 @@ static err_t tcp_client_raw_connected(void *arg, struct tcp_pcb *newpcb, err_t e
 	}
 	*/
 	
-	/*if(fgets((char*)data, sizeof(data), stdin) != NULL)
+	if(fgets((char*)data, sizeof(data - 1), stdin) != NULL)
 	{
-	es->p = pbuf_alloc(PBUF_TRANSPORT, strlen((char*)data), PBUF_POOL);
-*/
-	pbuf_take(es->p, (char*)data, strlen((char*)data));
-
+		data[sizeof(data) - 1] = '\0';
+		es->p = pbuf_alloc(PBUF_TRANSPORT, strlen((char*)data), PBUF_POOL);
+		pbuf_take(es->p, (char*)data, strlen((char*)data));
+	}
 
     tcp_arg(newpcb, es);
     tcp_recv(newpcb, tcp_client_raw_recv);
