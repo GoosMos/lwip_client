@@ -153,20 +153,6 @@ static err_t tcp_client_raw_connected(void *arg, struct tcp_pcb *newpcb, err_t e
     es->retries = 0;
     es->p = NULL;
 
-	/*
-	printf("Enter message to send : ");
-	if(scanf("%s", data) == 0) {
-		ret = ERR_MEM;
-	}
-	*/
-	
-	if(fgets((char*)data, sizeof(data - 1), stdin) != NULL)
-	{
-		data[sizeof(data) - 1] = '\0';
-		es->p = pbuf_alloc(PBUF_TRANSPORT, strlen((char*)data), PBUF_POOL);
-		pbuf_take(es->p, (char*)data, strlen((char*)data));
-	}
-
     tcp_arg(newpcb, es);
     tcp_recv(newpcb, tcp_client_raw_recv);
     tcp_poll(newpcb, tcp_client_raw_poll, 0);
@@ -174,7 +160,8 @@ static err_t tcp_client_raw_connected(void *arg, struct tcp_pcb *newpcb, err_t e
 
     tcp_client_handle(newpcb, es);
 
-	printf("open connection success\n");
+	es->p = pbuf_alloc(PBUF_TRANSPORT, strlen((char*)data), PBUF_POOL);
+	printf("tcp client open connection success\n");
 
     ret = ERR_OK;
   } else {
@@ -202,14 +189,15 @@ static err_t tcp_client_raw_recv(void *arg, struct tcp_pcb *tpcb, struct pbuf *p
       tcp_client_raw_send(tpcb, es);
     }
     ret = ERR_OK;
-  } else if (err != ERR_OK) {
+  } else if (err != ERR_OK) { /* packet not null but error detect */
     LWIP_ASSERT("no pbuf expected here", p == NULL);
     ret = err;
-  } else if (es->state == ES_ACCEPTED) {
+  } else if (es->state == ES_ACCEPTED) { /* packet not null and state Accepted */
     es->state = ES_RECEIVED;
     es->p = p;
     tcp_client_raw_send(tpcb, es);
     ret = ERR_OK;
+	printf("tcp client recv callback function\n");
   } else if (es->state == ES_RECEIVED) {
     /* read some more data */
     if(es->p == NULL) {
@@ -268,9 +256,7 @@ static void tcp_client_connection_close(struct tcp_pcb *tpcb, struct client_stat
   tcp_sent(tpcb, NULL);
   tcp_err(tpcb, NULL);
   tcp_poll(tpcb, NULL, 0);
-
   tcp_client_raw_free(es);
-
   tcp_close(tpcb);
 }
 
@@ -286,39 +272,42 @@ void tcp_client_send(void) {
 static void tcp_client_raw_send(struct tcp_pcb *tpcb, struct client_state *es) {
   struct pbuf *ptr;
   err_t ret = ERR_OK;
-  char msg[30] = "HELLO WORLD\n";
-  
+  char msg[30];
 
-  printf("break point\n");
-
-  if(scanf("%s", msg) != 0) {
+  if (scanf("%s", msg) != 0) {
+	msg[29] = '\0';
+  }
+	
+  es->p = pbuf_alloc(PBUF_TRANSPORT, strlen((char*)data), PBUF_POOL);
 
   while ((ret == ERR_OK) && (es->p != NULL) && (es->p->len <= tcp_sndbuf(tpcb))) {
-	  printf("%s", msg);
-    ptr = es->p; /* 전달할 패킷의 패이로드를 포인팅 */
+	  printf("break point\n");
+	  printf("%s\n", msg);
+	  ptr = es->p; /* 전달할 패킷의 패이로드를 포인팅 */
 
-	strncpy(msg, (char *)ptr->payload, ptr->len);
+	  strncpy(msg, (char *)ptr->payload, ptr->len);
+	  printf("%s\n", (char *)ptr->payload); 
 	
-    ret = tcp_write(tpcb, ptr->payload, ptr->len, 1); /* 페이로드 부분을 이용하여 tcp_write를 수행 */
-    if (ret == ERR_OK) {
-      u16_t plen;
+	  ret = tcp_write(tpcb, ptr->payload, ptr->len, 1); /* 페이로드 부분을 이용하여 tcp_write를 수행 */
+	  if (ret == ERR_OK) {
+		u16_t plen;
 
-      plen = ptr->len; /* 보내야 할 데이터가 fragmentation이 발생하는 경우 */
-      es->p = ptr->next;
+		plen = ptr->len; /* 보내야 할 데이터가 fragmentation이 발생하는 경우 */
+		es->p = ptr->next;
 
-      if (es->p != NULL) { /* buffer의 래퍼런스를 다음 페킷으로 이동 */
-        pbuf_ref(es->p);
-      }
+		if (es->p != NULL) { /* buffer의 래퍼런스를 다음 페킷으로 이동 */
+			pbuf_ref(es->p);
+			}
 
-      pbuf_free(ptr); /* chop first pbuf from chain */
-      tcp_recved(tpcb, plen); /* we can read more data now */
-    } else if (ret == ERR_MEM) {
-      es->p = ptr;
-    } else {
+		pbuf_free(ptr); /* chop first pbuf from chain */
+		tcp_recved(tpcb, plen); /* we can read more data now */
+		} else if (ret == ERR_MEM) {
+			es->p = ptr;
+		} else {
 
-    }
-  }
-  }
+		}
+	}
+  
 }
 
 

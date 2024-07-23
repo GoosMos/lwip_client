@@ -267,6 +267,7 @@ low_level_input(struct netif *netif)
   char buf[1518]; /* max packet size including VLAN excluding CRC */
   struct tapif *tapif = (struct tapif *)netif->state;
 
+  /*struct netif *loopif = (struct netif *)netif->state*/
   /* Obtain the size of the packet and put it into the "len"
      variable. */
   readlen = read(tapif->fd, buf, sizeof(buf));

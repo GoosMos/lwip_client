@@ -38,7 +38,39 @@
 #include "netif/tapif.h"
 #include "examples/example_app/default_netif.h"
 
+#include "lwip/ip.h"
+#include "lwip/snmp.h"
+
 static struct netif netif;
+
+
+/*
+static err_t
+netif_loop_output_ipv4(struct netif *netifs, struct pbuf *p, const ip4_addr_t *addr)
+{
+  LWIP_UNUSED_ARG(addr);
+  return netif_loop_output(netifs, p);
+}*/
+
+/*
+static err_t
+netif_loopif_init(struct netif *netifs)
+{
+  LWIP_ASSERT("netif_loopif_init: invalid netif", netifs != NULL);
+
+  MIB2_INIT_NETIF(netifs, snmp_ifType_softwareLoopback, 0);
+
+  netifs->name[0] = 'l';
+  netifs->name[1] = 'o';
+  netifs->output = netif_loop_output_ipv4;
+#if LWIP_LOOPIF_MULTICAST
+  netif_set_flags(netifs, NETIF_FLAG_IGMP);
+#endif
+  NETIF_SET_CHECKSUM_CTRL(netifs, NETIF_CHECKSUM_DISABLE_ALL);
+  return ERR_OK;
+}
+*/
+
 
 #if LWIP_IPV4
 #define NETIF_ADDRS ipaddr, netmask, gw,
@@ -50,8 +82,9 @@ void init_default_netif(void)
 {
 #if NO_SYS
 netif_add(&netif, NETIF_ADDRS NULL, tapif_init, netif_input);
+/*netif_add(&netif, NETIF_ADDRS NULL, netif_loopif_init, ip_input);*/
 #else
-  netif_add(&netif, NETIF_ADDRS NULL, tapif_init, tcpip_input);
+  netif_add(&netif, NETIF_ADDRS NULL, netif_loopif_init, tcpip_input);
 #endif
   netif_set_default(&netif);
 }
