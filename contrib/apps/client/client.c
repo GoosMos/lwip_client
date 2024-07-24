@@ -250,22 +250,25 @@ static void tcp_client_raw_send(struct tcp_pcb *tpcb, struct client_state *es) {
 	  printf("%s\n", msg);
 	  ptr = es->p; /* 전달할 패킷의 패이로드를 포인팅 */
 
-	  strncpy(msg, (char *)ptr->payload, ptr->len);
+	  strncpy((char *)ptr->payload, msg, ptr->len);
 	  printf("%s\n", (char *)ptr->payload); 
 	
-	  ret = tcp_write(tpcb, ptr->payload, ptr->len, 1); /* 페이로드 부분을 이용하여 tcp_write를 수행 */
+	  ret = tcp_write(tpcb, ptr->payload, ptr->len, TCP_WRITE_FLAG_COPY); /* 페이로드 부분을 이용하여 tcp_write를 수행 */
 	  if (ret == ERR_OK) {
-		u16_t plen;
+		/*u16_t plen;*/
 
-		plen = ptr->len; /* 보내야 할 데이터가 fragmentation이 발생하는 경우 */
-		es->p = ptr->next;
+		/*plen = ptr->len;  보내야 할 데이터가 fragmentation이 발생하는 경우 */
+		/*es->p = ptr->next;*/
 
-		if (es->p != NULL) { /* buffer의 래퍼런스를 다음 페킷으로 이동 */
-			pbuf_ref(es->p);
-			}
-
+		tcp_output(tpcb);
+/*
+*		if (es->p != NULL) { 
+*			pbuf_ref(es->p);
+*			}
+*/
 		pbuf_free(ptr); /* chop first pbuf from chain */
-		tcp_recved(tpcb, plen); /* we can read more data now */
+		printf("client send packet to server\n");
+		/*tcp_recved(tpcb, plen); we can read more data now */
 		} else if (ret == ERR_MEM) {
 			es->p = ptr;
 		} else {
@@ -284,7 +287,7 @@ static err_t tcp_client_raw_poll(void *arg, struct tcp_pcb *tpcb) {
   es = (struct client_state *)arg;
   if (es != NULL) { /* arg 파라미터가 NULL이 아닌 경우 */
     if (es->p != NULL) {
-
+		tcp_client_raw_send(tpcb, es);
     } else {
       if (es->state == ES_CLOSING) /* 상태가 닫혀있는 상태인 경우 */
       {
