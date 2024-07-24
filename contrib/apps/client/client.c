@@ -238,7 +238,7 @@ static void tcp_client_raw_send(struct tcp_pcb *tpcb, struct client_state *es) {
   struct pbuf *ptr;
   size_t msg_len;
   err_t ret = ERR_OK;
-  char msg[30];
+  char msg[30] = "";
 
   if (scanf("%s", msg) != 1) {
 	  printf("input error\n");
@@ -251,7 +251,8 @@ static void tcp_client_raw_send(struct tcp_pcb *tpcb, struct client_state *es) {
 	  pbuf_free(es->p);
   }
 
-  es->p = pbuf_alloc(PBUF_TRANSPORT, msg_len, PBUF_POOL); /* packet buffer allocation */
+  
+  es->p = pbuf_alloc(PBUF_RAW, msg_len, PBUF_POOL); /* packet buffer allocation */
 
   if (es->p == NULL) {
 	  printf("packet buffer allocation error\n");
@@ -260,7 +261,7 @@ static void tcp_client_raw_send(struct tcp_pcb *tpcb, struct client_state *es) {
 
   ptr = es->p; /* 전달할 패킷의 패이로드를 포인팅 */
   /*strncpy((char *)ptr->payload, msg, ptr->len);*/ /* string copy msg to payload */
-  memset(ptr->payload, 0, ptr->len);
+  memset(ptr->payload, 0, 30);
   memcpy(ptr->payload, msg, msg_len);
 
   while ((ret == ERR_OK) && (ptr != NULL) && (ptr->len <= tcp_sndbuf(tpcb))) {
@@ -269,13 +270,18 @@ static void tcp_client_raw_send(struct tcp_pcb *tpcb, struct client_state *es) {
 	  ret = tcp_write(tpcb, ptr->payload, ptr->len, TCP_WRITE_FLAG_COPY); /* 페이로드 부분을 이용하여 tcp_write를 수행 */
 	  if (ret == ERR_OK) {
 		u16_t plen = ptr->len;  /*보내야 할 데이터가 fragmentation이 발생하는 경우 */
-		ptr = ptr->next;
-		pbuf_free(es->p); /* current packet free */
-		es->p = ptr;
-
+		
+		if (ptr->next != NULL) {
+			ptr = ptr->next;
+		}
+		else {
+			ptr = NULL;
+		}
 
 		tcp_output(tpcb);
 
+		pbuf_free(es->p); /* current packet free */
+		es->p = ptr;
 		if (es->p != NULL) { 
 			pbuf_ref(es->p);
 		}
