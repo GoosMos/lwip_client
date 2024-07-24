@@ -259,8 +259,9 @@ static void tcp_client_raw_send(struct tcp_pcb *tpcb, struct client_state *es) {
   }
 
   ptr = es->p; /* 전달할 패킷의 패이로드를 포인팅 */
-  strncpy((char *)ptr->payload, msg, ptr->len); /* string copy msg to payload */
-  
+  /*strncpy((char *)ptr->payload, msg, ptr->len);*/ /* string copy msg to payload */
+  memset(ptr->payload, 0, ptr->len);
+  memcpy(ptr->payload, msg, msg_len);
 
   while ((ret == ERR_OK) && (ptr != NULL) && (ptr->len <= tcp_sndbuf(tpcb))) {
 	  printf("%s\n", (char *)ptr->payload); 
