@@ -21,21 +21,12 @@
 #include <string.h>
 
 
-
-
 /* ping variables */
 #ifdef LWIP_DEBUG
 #endif /* LWIP_DEBUG */
 #if !PING_USE_SOCKETS
 #endif /* PING_USE_SOCKETS */
 
-/** Prepare a echo ICMP request */
-
-#if PING_USE_SOCKETS
-
-/* Ping using the socket ip */
-
-#endif /* PING_USE_SOCKETS */
 
 /**
  * Initialize thread (socket mode) or timer (callback mode) to cyclically send pings
@@ -280,13 +271,7 @@ static void tcp_client_raw_send(struct tcp_pcb *tpcb, struct client_state *es) {
 			pbuf_ref(es->p);
 		}
 		pbuf_free(ptr);
-		/*
-		do {
-			freed = pbuf_free(ptr);
-		}
-		while(freed == 0);
 
-*/
 		if(es->p == NULL) {
 			printf("es->p null\n");
 			return;
@@ -319,7 +304,6 @@ static void tcp_client_raw_send(struct tcp_pcb *tpcb, struct client_state *es) {
 
 		}
 	}
-  
 }
 
 
@@ -348,9 +332,6 @@ static err_t tcp_client_raw_poll(void *arg, struct tcp_pcb *tpcb) {
 }
 
 
-
-
-
 static void tcp_client_handle (struct tcp_pcb *tpcb, struct client_state *es)
 {
 	LWIP_UNUSED_ARG(tpcb);
@@ -366,10 +347,5 @@ static void tcp_client_handle (struct tcp_pcb *tpcb, struct client_state *es)
 
 	esTx = es;
 }
-
-
-/**
- * Stop sending more pings.
- */
 
 #endif /* LWIP_RAW */
