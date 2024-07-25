@@ -644,7 +644,6 @@ main_loop(void)
 
 #if USE_ETHERNET
 
-	tcp_client_send();
 	/*
 	if (fgets(temp, sizeof(temp), stdin) != NULL) {
 		printf("user write : %s", temp);
@@ -672,6 +671,8 @@ main_loop(void)
 #if ENABLE_LOOPBACK && !LWIP_NETIF_LOOPBACK_MULTITHREADING
     /* check for loopback packets on all netifs */
     netif_poll_all();
+
+	tcp_client_send();
 #endif /* ENABLE_LOOPBACK && !LWIP_NETIF_LOOPBACK_MULTITHREADING */
 #if USE_PPP
     {

@@ -239,7 +239,7 @@ static void tcp_client_raw_send(struct tcp_pcb *tpcb, struct client_state *es) {
   size_t msg_len;
   err_t ret = ERR_OK;
   char msg[30] = "";
-  u8_t freed;
+  /*u8_t freed;*/
 
   if (scanf("%s", msg) != 1) {
 	  printf("input error\n");
@@ -248,10 +248,12 @@ static void tcp_client_raw_send(struct tcp_pcb *tpcb, struct client_state *es) {
 
   msg_len = strlen((char *)msg);	
 
-  if (es->p != NULL) {
-	  pbuf_free(es->p);
-  }
+  msg[msg_len] = '\0';
 
+  if (es->p != NULL) {
+    pbuf_free(es->p);
+    es->p = NULL;
+  }
   
   es->p = pbuf_alloc(PBUF_RAW, msg_len, PBUF_POOL); /* packet buffer allocation */
 
@@ -270,20 +272,21 @@ static void tcp_client_raw_send(struct tcp_pcb *tpcb, struct client_state *es) {
 	
 	  ret = tcp_write(tpcb, ptr->payload, ptr->len, TCP_WRITE_FLAG_COPY); /* 페이로드 부분을 이용하여 tcp_write를 수행 */
 	  if (ret == ERR_OK) {
-		/* u16_t plen = ptr->len;  보내야 할 데이터가 fragmentation이 발생하는 경우 */
+		u16_t plen = ptr->len;  /* 보내야 할 데이터가 fragmentation이 발생하는 경우 */
 		/*tcp_output(tpcb);*/
-		es->p = ptr->next; /* */
+		es->p = ptr->next; /* ptr->next == null, es->p == packet_buffer */
 
 		if (es->p != NULL) {
 			pbuf_ref(es->p);
 		}
+		pbuf_free(ptr);
+		/*
 		do {
 			freed = pbuf_free(ptr);
 		}
 		while(freed == 0);
 
-		/*es->p = ptr->next; */
-
+*/
 		if(es->p == NULL) {
 			printf("es->p null\n");
 			return;
@@ -309,7 +312,7 @@ static void tcp_client_raw_send(struct tcp_pcb *tpcb, struct client_state *es) {
 			pbuf_free(ptr); chop first pbuf from chain 
 		}*/
 		printf("client send packet to server\n");
-	/*	tcp_recved(tpcb, plen); we can read more data now */
+		tcp_recved(tpcb, plen); /* we can read more data now */
 		} else if (ret == ERR_MEM) {
 			es->p = ptr;
 		} else {
@@ -350,14 +353,13 @@ static err_t tcp_client_raw_poll(void *arg, struct tcp_pcb *tpcb) {
 
 static void tcp_client_handle (struct tcp_pcb *tpcb, struct client_state *es)
 {
+	LWIP_UNUSED_ARG(tpcb);
 	/* get the Remote IP */
-	ip_addr_t inIP = tpcb->remote_ip;
+	/*ip_addr_t inIP = tpcb->remote_ip;
 	uint16_t inPort = tpcb->remote_port;
-
+*/
 	/* Extract the IP */
-	char *remIP = ipaddr_ntoa(&inIP);
-	printf("%s", remIP);
-	printf("%d", inPort);
+/*	char *remIP = ipaddr_ntoa(&inIP); */
 /*	esTx->state = es->state; */
 /*	esTx->pcb = es->pcb; */
 /*	esTx->p = es->p; */
