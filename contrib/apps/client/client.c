@@ -70,8 +70,9 @@ static void tcp_client_raw_send(struct tcp_pcb *tpcb, struct client_state *es);
 
 static void tcp_client_connection_close(struct tcp_pcb *tpcb, struct client_state *es);
 
-static void tcp_client_handle(struct tcp_pcb *tpcb, struct client_state *es);
-
+/*
+   static void tcp_client_handle(struct tcp_pcb *tpcb, struct client_state *es);
+*/
 struct netif loop_netif;
 
 void client_init(void)
@@ -114,8 +115,7 @@ static err_t tcp_client_raw_connected(void *arg, struct tcp_pcb *newpcb, err_t e
     tcp_poll(newpcb, tcp_client_raw_poll, 0);
     tcp_sent(newpcb, tcp_client_raw_sent);
 
-    tcp_client_handle(newpcb, es);
-
+    /*tcp_client_handle(newpcb, es);*/
 	es->p = pbuf_alloc(PBUF_TRANSPORT, strlen((char*)data), PBUF_POOL);
 	printf("tcp client open connection success\n");
 
@@ -228,8 +228,8 @@ void tcp_client_send(void) {
 static void tcp_client_raw_send(struct tcp_pcb *tpcb, struct client_state *es) {
   struct pbuf *ptr;
   size_t msg_len;
-  err_t ret = ERR_OK;
   char msg[30] = "";
+  err_t ret = ERR_OK;
   /*u8_t freed;*/
 
   if (scanf("%s", msg) != 1) {
@@ -238,32 +238,30 @@ static void tcp_client_raw_send(struct tcp_pcb *tpcb, struct client_state *es) {
   }
 
   msg_len = strlen((char *)msg);	
+/*
+*  if (es->p != NULL) {
+*    pbuf_free(es->p);
+*    es->p = NULL;
+*  }
+*/ 
+  /*es->p = pbuf_alloc(PBUF_RAW, msg_len, PBUF_POOL);*/ /* packet buffer allocation */
 
-  msg[msg_len] = '\0';
+/*  if (es->p == NULL) {
+*	  printf("packet buffer allocation error\n");
+*	  return;
+*  }
+*/
 
-  if (es->p != NULL) {
-    pbuf_free(es->p);
-    es->p = NULL;
-  }
-  
-  es->p = pbuf_alloc(PBUF_RAW, msg_len, PBUF_POOL); /* packet buffer allocation */
-
-  if (es->p == NULL) {
-	  printf("packet buffer allocation error\n");
-	  return;
-  }
-
-  ptr = es->p; /* 전달할 패킷의 패이로드를 포인팅 */
-  /*strncpy((char *)ptr->payload, msg, ptr->len);*/ /* string copy msg to payload */
-  memset(ptr->payload, 0, 30); /* es->p payload memory setting */
-  memcpy(ptr->payload, msg, msg_len); /* es->p payload set msg */
-
-  while ((ret == ERR_OK) && (ptr != NULL) && (ptr->len <= tcp_sndbuf(tpcb))) {
-	  printf("%s\n", (char *)ptr->payload); 
+  while ((ret == ERR_OK) && (es->p != NULL) && (es->p->len <= tcp_sndbuf(tpcb))) {
+	  ptr = es->p; /* 전달할 패킷의 패이로드를 포인팅 */
+	  memset(ptr->payload, 0, 30); /* es->p payload memory setting */
+	  memcpy(ptr->payload, msg, msg_len); /* es->p payload set msg */
 	
+	  ptr->len = msg_len;
+	  printf("%s\n", (char *)ptr->payload); 
 	  ret = tcp_write(tpcb, ptr->payload, ptr->len, TCP_WRITE_FLAG_COPY); /* 페이로드 부분을 이용하여 tcp_write를 수행 */
 	  if (ret == ERR_OK) {
-		u16_t plen = ptr->len;  /* 보내야 할 데이터가 fragmentation이 발생하는 경우 */
+		/*u16_t plen = ptr->len; 보내야 할 데이터가 fragmentation이 발생하는 경우 */
 		/*tcp_output(tpcb);*/
 		es->p = ptr->next; /* ptr->next == null, es->p == packet_buffer */
 
@@ -272,32 +270,7 @@ static void tcp_client_raw_send(struct tcp_pcb *tpcb, struct client_state *es) {
 		}
 		pbuf_free(ptr);
 
-		if(es->p == NULL) {
-			printf("es->p null\n");
-			return;
-		}
-		if (ptr == NULL) {printf("nullllll\n");}
-/*		pbuf_free(ptr);*/
-/*
-		if (ptr->next != NULL) {
-			ptr = ptr->next;
-		}
-		else {
-			ptr = NULL;
-		}
-*/
-/*
-		pbuf_free(es->p); current packet free 
-		es->p = ptr;
-		if (es->p != NULL) { 
-			pbuf_ref(es->p);
-		}
-
-		if (ptr != NULL) {
-			pbuf_free(ptr); chop first pbuf from chain 
-		}*/
 		printf("client send packet to server\n");
-		tcp_recved(tpcb, plen); /* we can read more data now */
 		} else if (ret == ERR_MEM) {
 			es->p = ptr;
 		} else {
@@ -329,23 +302,6 @@ static err_t tcp_client_raw_poll(void *arg, struct tcp_pcb *tpcb) {
     ret = ERR_ABRT;
   }
   return ret;
-}
-
-
-static void tcp_client_handle (struct tcp_pcb *tpcb, struct client_state *es)
-{
-	LWIP_UNUSED_ARG(tpcb);
-	/* get the Remote IP */
-	/*ip_addr_t inIP = tpcb->remote_ip;
-	uint16_t inPort = tpcb->remote_port;
-*/
-	/* Extract the IP */
-/*	char *remIP = ipaddr_ntoa(&inIP); */
-/*	esTx->state = es->state; */
-/*	esTx->pcb = es->pcb; */
-/*	esTx->p = es->p; */
-
-	esTx = es;
 }
 
 #endif /* LWIP_RAW */
