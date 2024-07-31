@@ -66,6 +66,7 @@
 #include "lwip/stats.h"
 #include "lwip/sys.h"
 #include "lwip/ip.h"
+#include "default_netif.h"
 #if ENABLE_LOOPBACK
 #if LWIP_NETIF_LOOPBACK_MULTITHREADING
 #include "lwip/tcpip.h"
@@ -158,7 +159,7 @@ struct netif* netif_get_loopif(void)
  * @return ERR_OK if the loopif is initialized
  *         ERR_MEM if private data couldn't be allocated
  */
-static err_t
+err_t
 netif_loopif_init(struct netif *netif)
 {
   LWIP_ASSERT("netif_loopif_init: invalid netif", netif != NULL);
@@ -208,6 +209,8 @@ netif_init(void)
   IP_ADDR6_HOST(loop_netif.ip6_addr, 0, 0, 0, 0x00000001UL);
   loop_netif.ip6_addr_state[0] = IP6_ADDR_VALID;
 #endif /* LWIP_IPV6 */
+  /*init_default_netif(&loop_ipaddr, &loop_netmask, &loop_gw);*/
+  netif_set_default(&loop_netif);
 
   netif_set_link_up(&loop_netif);
   netif_set_up(&loop_netif);

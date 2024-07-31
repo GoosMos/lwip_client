@@ -305,7 +305,6 @@ test_netif_init(void)
   err_t err;
 #endif
 
-
 #if USE_PPP
   const char *username = NULL, *password = NULL;
 #ifdef PPP_USERNAME
@@ -353,6 +352,7 @@ test_netif_init(void)
 #endif /* LWIP_IPV4 */
 
 #if LWIP_IPV4
+  /**/
   init_default_netif(&ipaddr, &netmask, &gw);
 #else
   init_default_netif();
@@ -587,7 +587,7 @@ test_init(void * arg)
   srand((unsigned int)time(NULL));
 
   /* init network interfaces */
-  test_netif_init();
+  /* test_netif_init(); */
 
   /* init apps */
   apps_init();
@@ -649,8 +649,8 @@ main_loop(void)
 		printf("user write : %s", temp);
 	}
 	*/
-    default_netif_poll();
-	printf("packet polling\n");
+    /*default_netif_poll();
+	printf("packet polling\n");*/
 #else /* USE_ETHERNET */
     /* try to read characters from serial line and pass them to PPPoS */
     count = sio_read(ppp_sio, (u8_t*)rxbuf, 1024);
@@ -672,7 +672,7 @@ main_loop(void)
     /* check for loopback packets on all netifs */
     netif_poll_all();
 
-	tcp_client_send();
+	/*tcp_client_send();*/
 #endif /* ENABLE_LOOPBACK && !LWIP_NETIF_LOOPBACK_MULTITHREADING */
 #if USE_PPP
     {

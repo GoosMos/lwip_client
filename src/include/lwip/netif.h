@@ -438,6 +438,7 @@ void netif_set_addr(struct netif *netif, const ip4_addr_t *ipaddr, const ip4_add
                     const ip4_addr_t *gw);
 #else /* LWIP_IPV4 */
 struct netif *netif_add(struct netif *netif, void *state, netif_init_fn init, netif_input_fn input);
+err_t netif_loopif_init(struct netif *netif);
 #endif /* LWIP_IPV4 */
 void netif_remove(struct netif * netif);
 
